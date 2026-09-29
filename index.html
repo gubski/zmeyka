@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="ru"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Минск — маршрут-змейка</title>
+<style>
+*{box-sizing:border-box;margin:0}
+html,body{height:100%;overflow:hidden;background:#000;color:#fff;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Inter","Segoe UI",Roboto,sans-serif}
+.slide{position:absolute;inset:0;opacity:0;visibility:hidden;transition:opacity 1s ease,visibility 1s}
+.slide.on{opacity:1;visibility:visible}
+.bg img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;transform:scale(1.09);transition:opacity 1.4s ease,transform 9s ease-out}
+.bg img.on{opacity:1;transform:scale(1)}
+.tint{position:absolute;inset:0;background:linear-gradient(120deg,var(--c1),var(--c2));mix-blend-mode:soft-light;opacity:.8}
+.tint:after{content:"";position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,.72),rgba(0,0,0,.05) 60%)}
+.blob{position:absolute;left:-12vmax;top:-12vmax;width:55vmax;height:55vmax;border-radius:50%;filter:blur(70px);opacity:.5;mix-blend-mode:screen;background:radial-gradient(circle,var(--c1),transparent 65%);animation:drift 16s ease-in-out infinite alternate}
+.b2{left:auto;top:auto;right:-15vmax;bottom:-15vmax;background:radial-gradient(circle,var(--c2),transparent 65%);animation-duration:21s}
+@keyframes drift{to{transform:translate(12vw,8vh) scale(1.2)}}
+.glass{position:relative;background:rgba(255,255,255,.13);backdrop-filter:blur(24px) saturate(190%);-webkit-backdrop-filter:blur(24px) saturate(190%);border:1px solid rgba(255,255,255,.34);box-shadow:inset 0 1px 0 rgba(255,255,255,.65),inset 0 -24px 40px rgba(255,255,255,.04),0 24px 70px rgba(0,0,0,.4)}
+.card:before{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;background:radial-gradient(260px circle at var(--mx,30%) var(--my,0%),rgba(255,255,255,.28),transparent 60%)}
+.card{position:absolute;left:5vw;bottom:118px;width:min(560px,90vw);max-height:calc(100vh - 180px);overflow:auto;padding:26px 30px;border-radius:32px;scrollbar-width:none}
+.card.wide{width:min(680px,90vw)}
+.in>*{opacity:0;transform:translateY(26px);transition:opacity .9s cubic-bezier(.2,.8,.2,1),transform .9s cubic-bezier(.2,.8,.2,1)}
+.on .in>*{opacity:1;transform:none}
+.on .in>:nth-child(2){transition-delay:.15s}.on .in>:nth-child(3){transition-delay:.3s}.on .in>:nth-child(4){transition-delay:.45s}.on .in>:nth-child(5){transition-delay:.6s}.on .in>:nth-child(6){transition-delay:.75s}
+small{display:block;font-size:12px;letter-spacing:.14em;text-transform:uppercase;opacity:.8;margin-bottom:8px}
+h1{font-size:clamp(32px,5vw,62px);line-height:1.03;letter-spacing:-.03em;font-weight:700;margin-bottom:12px}
+p{font-size:15px;line-height:1.5;opacity:.95;margin-top:12px}
+.chip{display:inline-block;padding:5px 12px;border-radius:99px;font-size:12px;background:linear-gradient(90deg,var(--c1),var(--c2));font-weight:600}
+.box{margin-top:12px;padding:12px 16px;border-radius:18px;background:rgba(255,255,255,.15);font-size:14px;line-height:1.45}
+.box b{display:block;font-size:11px;letter-spacing:.12em;text-transform:uppercase;opacity:.85;margin-bottom:3px}
+#mini{width:100%;margin-top:14px;cursor:pointer}
+.track{fill:none;stroke:rgba(255,255,255,.25);stroke-width:6;stroke-linecap:round}
+.snk,.flow{fill:none;stroke-linecap:round}
+.snk{stroke:url(#g);stroke-width:6;stroke-dasharray:1;stroke-dashoffset:1}
+.on .snk{animation:draw 3.5s .6s ease forwards}
+.flow{stroke:#fff;stroke-width:2;stroke-dasharray:.015 .05;animation:flow 4s linear infinite;opacity:.8}
+@keyframes draw{to{stroke-dashoffset:0}}@keyframes flow{to{stroke-dashoffset:-1}}
+#mini text{fill:#fff;font-size:11px;text-anchor:middle}
+#cap,#ctr{position:fixed;z-index:5;padding:8px 16px;border-radius:99px;font-size:13px}
+#cap{right:22px;bottom:100px;max-width:52vw}
+#ctr{right:22px;top:20px}
+#bar{position:fixed;z-index:5;left:3vw;right:3vw;bottom:14px;height:70px;border-radius:99px}
+#bar svg{width:100%;height:100%;display:block}
+#bar .pg{fill:none;stroke:url(#bg);stroke-width:5;stroke-linecap:round;stroke-dasharray:1;transition:stroke-dashoffset 1.2s cubic-bezier(.3,.8,.2,1)}
+#bar .tk{fill:none;stroke:rgba(255,255,255,.3);stroke-width:5;stroke-linecap:round}
+#bar circle{cursor:pointer;fill:rgba(255,255,255,.55)}
+#bar .hd{fill:#fff;filter:drop-shadow(0 0 8px #fff);transition:cx 1.2s cubic-bezier(.3,.8,.2,1),cy 1.2s cubic-bezier(.3,.8,.2,1)}
+.nv{position:fixed;z-index:5;top:20px;left:22px;font-size:12px;opacity:.75}
+@media(max-width:640px){.card{padding:20px;bottom:112px}p,.box{font-size:13px}#cap{display:none}}
+</style></head><body>
+<div class="nv">← → · свайп · клик по змейке</div>
+<main id="deck"></main><div id="cap" class="glass"></div><div id="ctr" class="glass"></div><div id="bar" class="glass"></div>
+<script>
+const P='images/';
+const S=[
+{k:'intro',n:'Минск',a:['#ff7a18','#af002d'],im:[['introduction_slide.jpg','вечерняя панорама маршрута']]},
+{k:'frame',n:'Минск-Арена',a:['#7c5cff','#00d4ff'],im:[['arena2.jpg','вид сверху: арена и велотрек']]},
+{s:'Гимнастика',t:'Дворец гимнастики',a:['#ff5fa2','#7c5cff'],im:[['gymnastics.jpg','фасад'],['gymnastics2.jpg','вестибюль с фотографиями гимнасток'],['gymnastics3.jpg','бассейн'],['gymnastics4.jpg','тренировочный зал']],
+tx:'Около 15 000 кв. м залов, бассейна и трибун на северо-западе Минска. Построен к II Играм стран СНГ 2023 года: здесь прошли финалы по гимнастике. Волнистый фасад из стекла и металла напоминает движение ленты, а проспект вокруг стал новым спортивно-жилым районом.',
+f:'Волны фасада продолжаются внутри: потолок вестибюля повторяет плавную линию ленты.',r:'Зайдите в вестибюль: на колоннах — чёрно-белые фото гимнасток.',m:'Менеджмент · один проект запускает развитие района'},
+{s:'Лазурит',t:'«Лазурит» и «Морские лайнеры»',a:['#00c6ff','#0072ff'],im:[['lazurit.jpg','ЖК «Лазурит», дневной вид'],['lazurit2.jpg','ЖК «Лазурит», вечерняя подсветка'],['liners.jpg','«Морские лайнеры», фасад'],['liners2.jpg','«Морские лайнеры», вечерний вид сверху']],
+tx:'«Лазурит» — 138 м, самое высокое здание Минска. Рядом «дома-лайнеры»: изогнутые стеклянные корпуса с бизнес-центрами, ресторанами и спа. Отдохнуть удобно тут же: кофе на первой линии и вечерняя прогулка.',
+f:'Ночью «Лазурит» очерчен синими линиями света — видно за несколько кварталов.',r:'Вечером пройдитесь у подножия башни и загляните в кафе «Лайнеров».',m:'Коммуникации · высотная доминанта как символ района'},
+{s:'Арена',t:'Минск-Арена',a:['#a855f7','#22d3ee'],im:[['arena.jpg','фасад в вечерней подсветке'],['arena2.jpg','вид сверху: арена и велотрек'],['arena3.jpg','хоккейная арена изнутри'],['arena4.jpg','концерт «Последний звонок 2025»'],['arena5.jpg','велотрек: бадминтонные корты']],
+tx:'Открыта в 2010 году, домашняя арена ХК «Динамо-Минск», вместимость около 15 000. В 2014-м принимала чемпионат мира по хоккею. В комплексе есть велотрек: в его центре играют в бадминтон, а арена легко превращается в концертный зал.',
+f:'В финале ЧМ-2014 в Минске сборная России обыграла Финляндию — 5:2.',r:'Купите билет на матч «Динамо» или выйдите на массовое катание.',m:'Менеджмент · одна площадка — десятки форматов событий'},
+{s:'НОК',t:'Национальный олимпийский комитет',a:['#ff416c','#ff9a44'],im:[['olymp.jpg','ночной фасад с олимпийскими кольцами'],['olymp2.jpg','здание НОК зимой'],['olymp3.jpg','купольный зал под стеклом'],['olymp4.jpg','экспозиция «Олимпийские зимние игры»']],
+tx:'Здание НОК венчает стеклянный купол-«линза» с олимпийскими кольцами. Внутри — купольный зал для конференций с портретами олимпийцев вдоль стен и экспозиция об Олимпийских зимних играх: экипировка, кубки, памятные вещи.',
+f:'Ночью стены подсвечены красным, а кольца светятся цветами олимпийского флага.',r:'Осмотрите экспозицию: форма и кубки белорусских олимпийцев.',m:'Коммуникации · символы и бренд национальной команды'},
+{s:'Манеж',t:'Футбольный манеж',a:['#22c55e','#06b6d4'],im:[['football.jpg','манеж и поля, вид сверху'],['football2.jpg','внутри манежа'],['football3.jpg','лыжероллерная трасса зимой']],
+tx:'Крытое футбольное поле со светопрозрачной кровлей: дневной свет проникает внутрь, тренироваться можно круглый год. Рядом — открытые поля и лыжероллерная трасса длиной 5 км, зимой она становится лыжнёй.',
+f:'Петля лыжероллерной трассы в 5 км за зиму превращается в лыжню для всего района.',r:'Пробегите или проедьте на роликах круг по лыжероллерной трассе.',m:'Менеджмент · сезонность: объект работает 12 месяцев'},
+{s:'Marriott',t:'Marriott и Falcon Club',a:['#f59e0b','#ec4899'],im:[['marriot.jpg','Marriott, вечерний вид'],['marriot2.jpg','Falcon Club, вид днём'],['marriot3.jpg','закат над озером с террасы'],['marriot4.jpg','кинозал Falcon Club']],
+tx:'Единый комплекс у озера: отель Marriott, Falcon Club, казино и посольство Катара. Клуб предлагает кинозал, террасы у воды и площадки для встреч.',
+f:'С высоты крыша комплекса напоминает раскрытые крылья сокола — falcon.',r:'Выпейте кофе на террасе с видом на озеро на закате.',m:'Коммуникации · международное присутствие в городской среде'},
+{s:'Флаг',t:'Площадь флага и Дворец Независимости',a:['#ef4444','#f97316'],im:[['square.jpg','Площадь Государственного флага, вид сверху'],['palace.jpg','Дворец Независимости на закате'],['palace2.jpg','скульптура у входа во Дворец Независимости'],['palace3.jpg','парадный зал Дворца Независимости']],
+tx:'Площадь открыта в 2013 году: радиус 59 м, флагшток 70 м, полотнище 98 м² и весом 25 кг. Место выбрано с учётом розы ветров: на открытом пространстве флаг почти всегда развевается. Рядом Дворец Независимости — комплекс государственных церемоний и приёмов.',
+f:'Полотнище флага — 98 м², как большая трёхкомнатная квартира, а весит всего 25 кг.',r:'Подойдите к флагштоку и посмотрите вверх: 70 м видны издалека.',m:'Коммуникации · государственные символы в городской среде'},
+{s:'Парк',t:'Парк Победы',a:['#10b981','#facc15'],im:[['park.jpg','фонтаны Парка Победы на закате (иллюстрация)'],['park2.jpg','парк и Комсомольское озеро сверху']],
+tx:'Комсомольское озеро создано в 1940 году: строили место отдыха нового города. Открытие назначили на 22 июня 1941-го, но утром началась война — вместо праздника город услышал бомбёжки. Парк открыли как Парк Победы в 1945-м. Сегодня это зона отдыха: фонтаны, пляжи, Птичий остров.',
+f:'Праздничное открытие парка планировали на 22 июня 1941 года — день начала войны.',r:'Дойдите по 60-метровому мосту до Птичьего острова.',m:'Социокультурный контекст · память как ресурс идентичности'},
+{s:'Дворец спорта',t:'Дворец спорта',a:['#6366f1','#f43f5e'],im:[['sport.jpg','вечерняя панорама'],['sport2.jpg','исторический снимок здания'],['sport3.jpg','трибуны Дворца спорта']],
+tx:'Построен в 1963–1966 годах. Вмещает 3311 зрителей в спортивном формате и до 4500 на концертах, принимает соревнования по 22 видам спорта, концерты и шоу. За полвека стал «городской сценой» для спорта и культуры.',
+f:'Арена умеет превращаться: 3311 мест на матчи и до 4500 — на концерт.',r:'Загляните в афишу: один вечер — спорт, другой — концерт.',m:'Менеджмент · трансформация зала под разные события'},
+{s:'Galleria',t:'ТРЦ Galleria Minsk',a:['#f472b6','#60a5fa'],im:[['gallereya.jpg','Galleria Minsk и соседний DoubleTree, вечер'],['gallareya3.jpg','атриум Galleria Minsk'],['gallereya2.jpg','зимняя инсталляция «Снежная королева»']],
+tx:'Построен на месте общежития БГУ: проект согласовали указом 2012 года, центр открылся в 2013-м. Сегодня это торговая и досуговая точка проспекта: магазины, кафе, тематические инсталляции — зимой в атриуме встречает Снежная королева. Рядом отель DoubleTree и Свислочь.',
+f:'Атриум оформляют сезонными инсталляциями — от зимней Снежной королевы до праздничных декораций.',r:'Поднимитесь на верхний ярус атриума, затем прогуляйтесь к набережной Свислочи.',m:'Менеджмент · от общежития к городскому центру'},
+{k:'end',n:'Falcon Club',a:['#ff7a18','#7c5cff'],im:[['marriot3.jpg','закат над озером у Falcon Club']]}
+];
+const N=S.length,stops=S.filter(s=>s.t);
+const body=(s,i)=>{
+if(s.k=='intro')return`<div class="card glass in wide"><small>Интерактивный путеводитель</small><h1>Минск.<br>Маршрут-змейка</h1><p>10 точек одного проспекта: как управление и социокультурные коммуникации создают городскую среду.</p><svg id="mini" viewBox="0 0 600 210"></svg></div>`;
+if(s.k=='frame')return`<div class="card glass in wide"><small>Взгляд эксперта</small><h1>Город как управляемая система</h1><div class="box"><b>Управление</b>Якорные объекты — арена, дворец, торговый центр — запускают развитие целых районов.</div><div class="box"><b>Коммуникации</b>Флаг, кольца, огни фасадов — язык символов, который город говорит жителям и гостям.</div><div class="box"><b>Сообщества</b>Спорт, память и досуг собирают людей и превращают место в общее пространство.</div></div>`;
+if(s.k=='end')return`<div class="card glass in wide"><small>Итоги маршрута</small><h1>Три урока</h1><div class="box"><b>1 · Якорь</b>Крупный объект даёт району инфраструктуру, работу и идентичность.</div><div class="box"><b>2 · Символ</b>Смыслы (флаг, кольца, память) объединяют лучше, чем площадь квадратных метров.</div><div class="box"><b>3 · Универсальность</b>Пространство, которое меняет формат, живёт дольше и приносит больше пользы.</div><p>Спасибо за прогулку! ← вернуться к началу маршрута</p></div>`;
+const n=stops.indexOf(s)+1;
+return`<div class="card glass in"><small>Точка ${n} из 10</small><h1>${s.t}</h1><span class="chip">${s.m}</span><p>${s.tx}</p><div class="box"><b>А знаете ли вы?</b>${s.f}</div><div class="box"><b>Что сделать</b>${s.r}</div></div>`};
+const deck=document.getElementById('deck');
+S.forEach((s,i)=>{const e=document.createElement('section');e.className='slide';e.style.setProperty('--c1',s.a[0]);e.style.setProperty('--c2',s.a[1]);
+const nm=s.t||s.n;
+e.innerHTML=`<div class="bg">${s.im.map(m=>`<img src="${P}${m[0]}" alt="${nm} — ${m[1]}"${i?' loading="lazy"':''}>`).join('')}</div><div class="tint"></div><i class="blob"></i><i class="blob b2"></i>${body(s,i)}`;
+deck.append(e);
+e.querySelector('.card').addEventListener('pointermove',ev=>{const r=ev.currentTarget.getBoundingClientRect();ev.currentTarget.style.setProperty('--mx',(ev.clientX-r.left)+'px');ev.currentTarget.style.setProperty('--my',(ev.clientY-r.top)+'px')});});
+// mini map
+const pos=i=>i<5?[40+i*130,50]:[560-(i-5)*130,150],d='M40,50H560A50,50 0 0 1 560,150H40';
+document.getElementById('mini').innerHTML=`<defs><linearGradient id="g"><stop offset="0" stop-color="#ffd452"/><stop offset="1" stop-color="#ff4f9a"/></linearGradient></defs><path class="track" d="${d}"/><path class="snk" pathLength="1" d="${d}"/><path class="flow" pathLength="1" d="${d}"/>`+stops.map((s,i)=>{const[x,y]=pos(i);return`<g onclick="go(${i+2})"><circle cx="${x}" cy="${y}" r="13" fill="#fff"/><text x="${x}" y="${y+4}" style="fill:#111;font-weight:700">${i+1}</text><text x="${x}" y="${y+(i<5?-22:32)}">${s.s}</text></g>`}).join('');
+// bottom snake
+const bar=document.getElementById('bar');let hd,pg;
+function drawBar(){const W=bar.clientWidth,H=70,x0=26,x1=W-26,pts=[];
+for(let x=x0;x<=x1;x+=4)pts.push(`${x},${35-15*Math.cos((x-x0)/(x1-x0)*Math.PI*(N-1))}`);
+const dd='M'+pts.join('L'),nd=[...Array(N)].map((_,i)=>[x0+i*(x1-x0)/(N-1),35-15*Math.cos(i*Math.PI)]);
+bar.innerHTML=`<svg viewBox="0 0 ${W} ${H}"><defs><linearGradient id="bg"><stop offset="0" stop-color="#ffd452"/><stop offset="1" stop-color="#ff4f9a"/></linearGradient></defs><path class="tk" d="${dd}"/><path class="pg" pathLength="1" d="${dd}"/>${nd.map((p,i)=>`<circle cx="${p[0]}" cy="${p[1]}" r="4.5" onclick="go(${i})"><title>${S[i].t||S[i].n}</title></circle>`).join('')}<circle class="hd" r="9" cx="${nd[0][0]}" cy="${nd[0][1]}"/></svg>`;
+hd=bar.querySelector('.hd');pg=bar.querySelector('.pg');bar._nd=nd;upd()}
+function upd(){if(!hd||cur<0)return;const p=bar._nd[cur];hd.setAttribute('cx',p[0]);hd.setAttribute('cy',p[1]);pg.style.strokeDashoffset=1-cur/(N-1)}
+// navigation
+let cur=-1,ph=0,lock=0;const sl=[...document.querySelectorAll('.slide')];
+function show(k){const s=sl[cur],im=[...s.querySelectorAll('.bg img')];im.forEach((x,j)=>x.classList.toggle('on',j==k));ph=k;document.getElementById('cap').textContent=(S[cur].t||S[cur].n)+' · '+S[cur].im[k][1]}
+function go(i){i=Math.max(0,Math.min(N-1,i));if(i==cur)return;if(cur>=0)sl[cur].classList.remove('on');cur=i;sl[i].classList.add('on');show(0);document.getElementById('ctr').textContent=String(i+1).padStart(2,'0')+' / '+N;upd()}
+setInterval(()=>{const l=S[cur].im.length;if(l>1)show((ph+1)%l)},5500);
+addEventListener('keydown',e=>{if(['ArrowRight','ArrowDown',' ','PageDown'].includes(e.key))go(cur+1);if(['ArrowLeft','ArrowUp','PageUp'].includes(e.key))go(cur-1)});
+addEventListener('wheel',e=>{if(e.target.closest('.card')&&e.target.closest('.card').scrollHeight>e.target.closest('.card').clientHeight)return;const t=Date.now();if(t-lock<900)return;lock=t;go(cur+(e.deltaY>0?1:-1))},{passive:true});
+let tx0=0;addEventListener('touchstart',e=>tx0=e.touches[0].clientX,{passive:true});
+addEventListener('touchend',e=>{const dx=e.changedTouches[0].clientX-tx0;if(Math.abs(dx)>50)go(cur+(dx<0?1:-1))});
+addEventListener('resize',drawBar);
+drawBar();go(0);
+</script></body></html>
